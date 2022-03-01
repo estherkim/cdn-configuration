@@ -11,7 +11,7 @@ const octokit = new Octokit({
   auth: process.env.ACCESS_TOKEN,
 });
 const pullNumber = githubRef.search(/(\d+)/g);
-const params = {owner: 'ampproject', repo: 'cdn-configuration', pull_number: pullNumber };
+const params = {owner: 'estherkim', repo: 'cdn-configuration', pull_number: pullNumber };
 
 async function main() {
   const {data: pull} = await octokit.rest.pulls.get(params)

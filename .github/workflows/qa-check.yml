@@ -22,3 +22,5 @@ jobs:
 
       - name: Check QA
         run: npx ./scripts/check-qa.ts --github_ref=${{ github.event.inputs.github_ref }}
+        env:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
