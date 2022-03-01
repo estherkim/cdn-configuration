@@ -1,0 +1,18 @@
+name: QA check setup
+
+on:
+  pull_request:
+    paths:
+      - 'configs/versions.json'
+  pull_request_review:
+
+jobs:
+  qa-check-setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger second check
+        uses: fjogeleit/http-request-action@master
+        with:
+          url: 'https://api.github.com/repos/estherkim/cdn-configuration/actions/workflows/second-check.yml/dispatches'
+          data: '{"ref": "main", "inputs": {"github_ref": "${{ github.ref_name }}"}}'
+          bearerToken: ${{ secrets.access-token }}
