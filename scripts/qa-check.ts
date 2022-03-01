@@ -3,23 +3,24 @@
 import {Octokit} from '@octokit/rest';
 import yargs from 'yargs/yargs';
 
-const {github_ref: githubRef} = yargs(process.argv.slice(2))
-  .options({github_ref: {type: 'string', demandOption: true}})
+const {pull_number} = yargs(process.argv.slice(2))
+  .options({pull_number: {type: 'number', demandOption: true}})
   .parseSync();
 
 const octokit = new Octokit({
   auth: process.env.ACCESS_TOKEN,
 });
-const pullNumber = githubRef.search(/(\d+)/g);
+
 const params = {
   owner: 'estherkim',
   repo: 'cdn-configuration',
-  pull_number: pullNumber,
+  pull_number,
 };
 
 async function main() {
   const {data: pull} = await octokit.rest.pulls.get(params);
-  if (!pull.head.ref.startsWith('') || !pull.head.ref.startsWith('')) {
+  console.log(pull.head.ref);
+  if (!pull.head.ref.startsWith('promote-job-1') && !pull.head.ref.startsWith('promote-job-2')) {
     // skip for other branches
     return;
   }

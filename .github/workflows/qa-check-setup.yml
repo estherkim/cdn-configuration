@@ -7,12 +7,20 @@ on:
   pull_request_review:
 
 jobs:
-  qa-check-setup:
+  setup-pull-request:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger second check
+      - name: Trigger QA check from pull request
+        if: ${{ github.event_name == 'pull_request'}}
         uses: fjogeleit/http-request-action@master
         with:
           url: 'https://api.github.com/repos/estherkim/cdn-configuration/actions/workflows/qa-check.yml/dispatches'
-          data: '{"ref": "main", "inputs": {"github_ref": "${{ github.ref_name }}"}}'
-          bearerToken: ${{ secrets.access-token }}
+          data: '{"ref": "main", "inputs": {"pull_number": ${{ github.event.pull_request.number }}}}'
+          bearerToken: ${{ secrets.ACCESS_TOKEN }}
+      - name: Trigger QA check from review
+        if: ${{ github.event_name == 'pull_request_review'}}
+        uses: fjogeleit/http-request-action@master
+        with:
+          url: 'https://api.github.com/repos/estherkim/cdn-configuration/actions/workflows/qa-check.yml/dispatches'
+          data: '{"ref": "main", "inputs": {"pull_number": ${{ github.event.review.pull_request.number }}}}'
+          bearerToken: ${{ secrets.ACCESS_TOKEN }}

@@ -3,9 +3,9 @@ name: QA check
 on:
   workflow_dispatch:
     inputs:
-      github_ref:
+      pull_number:
         required: true
-        type: string
+        type: number
 
 jobs:
   qa-check:
@@ -21,6 +21,6 @@ jobs:
         run: npm ci
 
       - name: Check QA
-        run: npx ./scripts/check-qa.ts --github_ref=${{ github.event.inputs.github_ref }}
+        run: npx ./scripts/qa-check.ts --pull_number=${{ github.event.inputs.pull_number }}
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
