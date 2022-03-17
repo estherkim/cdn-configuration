@@ -1,0 +1,112 @@
+name: Post promote tasks
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - 'main'
+    paths:
+      - 'configs/versions.json'
+
+jobs:
+  setup:
+    if: github.event.pull_request.merged
+    runs-on: ubuntu-latest
+    outputs:
+      npm-tags: ${{ steps.get-tasks.outputs.npm-tags }}
+      calendar-channels: ${{ steps.get-tasks.outputs.calendar-channels }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get tasks
+        id: get-tasks
+        run: |
+          HEAD=${{ github.event.pull_request.merge_commit_sha }}
+          BASE=$(git rev-parse ${HEAD}^)
+          MATRIX=$(npx ts-node ./scripts/post-promote-tasks-job.ts --head="$HEAD" --base="$BASE")
+          NPM="$(echo $MATRIX | jq '.npm')"
+          CALENDAR="$(echo $MATRIX | jq '.calendar')"
+          echo "::set-output name=npm-tags::{"include":"${NPM}"}"
+          echo "::set-output name=calendar-channels::{"include":"${CALENDAR}"}"
+
+  npm-publish:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.setup.outputs.npm-tags) }}
+      fail-fast: false
+    steps:
+      - run: echo ${{matrix.amp-version}} ${{matrix.tag}}
+      
+#       - name: Trigger publish-npm-packages workflow on amphtml
+#         uses: fjogeleit/http-request-action@v1
+#         with:
+#           url: 'https://api.github.com/repos/ampproject/amphtml/actions/workflows/publish-npm-packages.yml/dispatches'
+#           bearerToken: ${{ secrets.ACCESS_TOKEN }}
+#           data: >
+#             {
+#               "ref": "main",
+#               "inputs":
+#               {
+#                 "amp-version": "${{ matrix.amp-version }}",
+#                 "tag": "${{ matrix.tag }}"
+#               }
+#             }
+
+  release-calendar:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.setup.outputs.calendar-channels) }}
+      fail-fast: false
+    steps:
+      - run: echo ${{matrix.amp-version}} ${{matrix.channel}}
+      
+#       - name: Create event on release calendar
+#         uses: fjogeleit/http-request-action@v1
+#         with:
+#           url: '${{ secrets.CALENDAR_URI }}'
+#           customHeaders: '{"Authorization": "Basic ${{ secrets.CALENDAR_TOKEN }}"}'
+#           data: >
+#             {
+#               "release":
+#               {
+#                 "name": "${{ matrix.amp-version }}"
+#               },
+#               "promotion":
+#               {
+#                 "releaseName": "${{ matrix.amp-version }}",
+#                 "time": "$(date +'%Y-%m-%d %H:%M:%S %Z')",
+#                 "channel": "${{ matrix.channel }}"
+#               }
+#             }
+
+  create-issue-on-error:
+    if: failure()
+    needs: [setup, npm-publish, release-calendar]
+    permissions:
+      contents: read
+      issues: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Create issue on error
+        uses: JasonEtco/create-an-issue@v2
+        with:
+          filename: .github/create_issue_on_error.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          MENTION: '@estherkim' #TODO(estherkim): switch to infra team once debug complete
+          REPO_SLUG: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
