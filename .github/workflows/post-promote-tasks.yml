@@ -18,6 +18,8 @@ jobs:
       calendar-channels: ${{ steps.get-tasks.outputs.calendar-channels }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v3
         with:
