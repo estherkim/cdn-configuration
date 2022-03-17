@@ -1,0 +1,26 @@
+name: QA check
+
+on:
+  workflow_dispatch:
+    inputs:
+      pull_number:
+        required: true
+        type: number
+
+jobs:
+  qa-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check QA
+        run: npx ./scripts/qa-check.ts --pull_number=${{ github.event.inputs.pull_number }}
+        env:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
