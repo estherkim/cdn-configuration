@@ -13,6 +13,7 @@
     "prettier"
   ],
   "rules": {
+
     "@typescript-eslint/restrict-template-expressions": [
       2,
       {"allowBoolean": true}
